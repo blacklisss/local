@@ -1,5 +1,6 @@
 import argparse
 import os
+import openpyxl
 
 def load_text(filename):
     with open(filename, 'r', encoding='utf-8') as f:
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('mainfile', type=str, help='filename of the main text')
     parser.add_argument('dir', type=str, help='directory containing the other texts')
     parser.add_argument('--n', type=int, default=2, help='value of n for the n-grams')
+    parser.add_argument('--output', type=str, default='output.xlsx', help='output Excel filename')
     args = parser.parse_args()
 
     text1 = load_text(args.mainfile)
@@ -33,7 +35,7 @@ if __name__ == '__main__':
     # iterate over files in the directory
     scores = []
     for filename in os.listdir(args.dir):
-        if filename.endswith('.html'):
+        if filename.endswith('.txt'):
             filepath = os.path.join(args.dir, filename)
             text2 = load_text(filepath)
             similarity = compare_texts(text1, text2, args.n)
@@ -42,7 +44,15 @@ if __name__ == '__main__':
     # sort by descending similarity
     scores.sort(key=lambda x: x[1], reverse=True)
 
-    # print the results
-    print(f'Similarities between "{args.mainfile}" and texts in "{args.dir}":')
-    for filename, similarity in scores:
-        print(f'{filename}: {similarity:.2f}')
+    # save results to Excel file
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Similarities'
+    ws.cell(row=1, column=1, value='Filename')
+    ws.cell(row=1, column=2, value='Similarity')
+    for i, (filename, similarity) in enumerate(scores):
+        ws.cell(row=i+2, column=1, value=filename)
+        ws.cell(row=i+2, column=2, value=similarity)
+    wb.save(args.output)
+
+    print(f'Results saved to {args.output}')
